@@ -1,5 +1,6 @@
 package objects;
 
+import lime.utils.Assets;
 import flixel.FlxSprite;
 
 using StringTools;
@@ -37,6 +38,8 @@ class HealthIcon extends FlxSprite
 			changeIcon(PlayState.SONG.player1);
 	}
 
+	private var iconOffsets:Array<Float> = [0, 0];
+
 	public function changeIcon(newChar:String):Void
 	{
 		if (newChar != 'bf-pixel' && newChar != 'bf-old')
@@ -46,12 +49,25 @@ class HealthIcon extends FlxSprite
 		{
 			if (animation.getByName(newChar) == null)
 			{
-				loadGraphic(Paths.image('icons/icon-' + newChar), true, 150, 150);
+				if (Assets.exists(Paths.image('icons/icon-' + newChar)))
+					loadGraphic(Paths.image('icons/icon-' + newChar), true, 150, 150);
+				else
+					loadGraphic(Paths.image('icons/icon-dad'), true, 150, 150);
+
+				iconOffsets[0] = (width - 150) / 2;
+				iconOffsets[1] = (width - 150) / 2;
 				animation.add(newChar, [0, 1], 0, false, isPlayer);
 			}
 			animation.play(newChar);
 			char = newChar;
 		}
+	}
+
+	override function updateHitbox()
+	{
+		super.updateHitbox();
+		offset.x = iconOffsets[0];
+		offset.y = iconOffsets[1];
 	}
 
 	override function update(elapsed:Float)

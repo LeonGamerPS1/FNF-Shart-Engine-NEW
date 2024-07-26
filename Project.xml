@@ -133,6 +133,7 @@
 	<haxelib name="faxe" if='switch'/>
 	<haxelib name="polymod"/>
 	<haxelib name="newgrounds" if='jumpscare'/>
+	<haxelib name="tjson" />
 	<haxelib name="hxcpp-debug-server" if="desktop debug"/>
 	<haxelib name="linc_luajit" if="LUA_ALLOWED"/>
 	

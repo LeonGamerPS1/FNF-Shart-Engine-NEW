@@ -45,13 +45,26 @@ import sys.io.File;
 import sys.thread.Thread;
 #end
 
+typedef TitleData =
+{
+	titlex:Float,
+	titley:Float,
+	startx:Float,
+	starty:Float,
+	gfx:Float,
+	gfy:Float,
+	backgroundSprite:String,
+	bpm:Float
+}
+
 class TitleState extends MusicBeatState
 {
 	public static var closedState:Bool = false;
 	public static var initialized:Bool = false;
-	
+
 	public static var updateVersion:String = '';
 	public static var psycheEngineVersion:String = 'v0.1-LuaModSupport';
+
 	var startedIntro:Bool;
 
 	var mustUpdate:Bool = false;
@@ -60,7 +73,7 @@ class TitleState extends MusicBeatState
 	var credTextShit:Alphabet;
 	var textGroup:FlxGroup;
 	var ngSpr:FlxSprite;
-
+	var titleJSON:TitleData;
 	var curWacky:Array<String> = [];
 	var wackyImage:FlxSprite;
 	var lastBeat:Int = 0;
@@ -75,7 +88,7 @@ class TitleState extends MusicBeatState
 	override public function create():Void
 	{
 		#if polymod
-		//polymod.Polymod.init({modRoot: "mods", dirs: ['introMod'], framework: OPENFL});
+		// polymod.Polymod.init({modRoot: "mods", dirs: ['introMod'], framework: OPENFL});
 		// FlxG.bitmap.clearCache();
 		#end
 
@@ -98,6 +111,8 @@ class TitleState extends MusicBeatState
 		PreferencesMenu.initPrefs();
 		PlayerSettings.init();
 		Highscore.load();
+
+		titleJSON = tjson.TJSON.parse(Paths.json('title'));
 
 		#if newgrounds
 		NGio.init();
@@ -238,7 +253,7 @@ class TitleState extends MusicBeatState
 			FlxG.sound.music.fadeIn(4, 0, 0.7);
 		}
 
-		Conductor.changeBPM(190);
+
 		persistentUpdate = true;
 
 		var bg:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
@@ -268,9 +283,10 @@ class TitleState extends MusicBeatState
 		gfDance.animation.addByIndices('danceLeft', 'gfDance', [30, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14], "", 24, false);
 		gfDance.animation.addByIndices('danceRight', 'gfDance', [15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29], "", 24, false);
 		gfDance.antialiasing = true;
-		gfDance.animation.addByPrefix("GF Cheer","GF Cheer",24,true);
+		gfDance.animation.addByPrefix("GF Cheer", "GF Cheer", 24, true);
+	
 		add(gfDance);
-
+		Conductor.bpm = titleJSON.bpm;
 		gfDance.shader = swagShader.shader;
 
 		add(logoBl);
@@ -291,7 +307,7 @@ class TitleState extends MusicBeatState
 		logo.antialiasing = true;
 		// add(logo);
 
-		 FlxTween.tween(logoBl, {y: logoBl.y + 50}, 0.6, {ease: FlxEase.quadInOut, type: PINGPONG});
+		FlxTween.tween(logoBl, {y: logoBl.y + 50}, 0.6, {ease: FlxEase.quadInOut, type: PINGPONG});
 		// FlxTween.tween(logo, {y: logoBl.y + 50}, 0.6, {ease: FlxEase.quadInOut, type: PINGPONG, startDelay: 0.1});
 
 		credGroup = new FlxGroup();
@@ -406,51 +422,54 @@ class TitleState extends MusicBeatState
 			if (FlxG.sound.music != null)
 				FlxG.sound.music.onComplete = null;
 			// netStream.play(Paths.file('music/kickstarterTrailer.mp4'));
-	
 
 			// If it's Friday according to da clock
 			if (Date.now().getDay() == 5)
 				createCoolText(['In association', 'with']);
 
 			titleText.animation.play('press');
-			gfDance.animation.play("GF Cheer",true,false);
-						FlxG.sound.play(Paths.sound('confirmMenu'), 5);
+			gfDance.animation.play("GF Cheer", true, false);
+			FlxG.sound.play(Paths.sound('confirmMenu'), 5);
 
 			transitioning = true;
 			// FlxG.sound.music.stop();
 
-			
 			if (!OutdatedSubState.leftState)
 			{
 				trace('checking for update');
-			    var http = new haxe.Http("https://raw.githubusercontent.com/LeonGamerPS1/FNF-Shart-Engine/main/version.txt");
+				var http = new haxe.Http("https://raw.githubusercontent.com/LeonGamerPS1/FNF-Shart-Engine/main/version.txt");
 
-			http.onData = function (data:String)
-			{
-				updateVersion = data.split('\n')[0].trim();
-				var curVersion:String = psycheEngineVersion.trim();
-				trace('version online: ' + updateVersion + ', your version: ' + curVersion);
-				if(updateVersion != curVersion) {
-					trace('versions arent matching!');
-					mustUpdate = true;
+				http.onData = function(data:String)
+				{
+					updateVersion = data.split('\n')[0].trim();
+					var curVersion:String = psycheEngineVersion.trim();
+					trace('version online: ' + updateVersion + ', your version: ' + curVersion);
+					if (updateVersion != curVersion)
+					{
+						trace('versions arent matching!');
+						mustUpdate = true;
+					}
 				}
-			}
-          
-			http.onError = function (error) {
-				trace('error: $error');
-			}
 
-			http.request();
+				http.onError = function(error)
+				{
+					trace('error: $error');
+				}
+
+				http.request();
 			}
 			new FlxTimer().start(1, function(tmr:FlxTimer)
+			{
+				if (mustUpdate)
 				{
-					if (mustUpdate) {
-						FlxG.switchState(new OutdatedSubState());
-					} else {
-						FlxG.switchState(new MainMenuState());
-					}
-					closedState = true;
-				});
+					FlxG.switchState(new OutdatedSubState());
+				}
+				else
+				{
+					FlxG.switchState(new MainMenuState());
+				}
+				closedState = true;
+			});
 			// FlxG.sound.play(Paths.music('titleShoot'), 0.7);
 		}
 
@@ -518,12 +537,12 @@ class TitleState extends MusicBeatState
 		super.beatHit();
 
 		if (!startedIntro)
-			return ;
+			return;
 
 		if (skippedIntro)
 		{
 			logoBl.animation.play('bump', true);
-             
+
 			danceLeft = !danceLeft;
 
 			if (danceLeft)
@@ -543,17 +562,15 @@ class TitleState extends MusicBeatState
 					switch (i + 1)
 					{
 						case 1:
-
 							createCoolText(['ninjamuffin99', 'phantomArcade', 'kawaisprite', 'evilsk8er']);
-						 credTextShit.visible = true;
-					
+							credTextShit.visible = true;
+
 						case 3:
-							
 							addMoreText('present');
 						// credTextShit.text += '\npresent...';
 						// credTextShit.addText();
 						case 4:
-							
+
 						// credTextShit.visible = false;
 						// credTextShit.text = 'In association \nwith';
 						// credTextShit.screenCenter();
@@ -589,13 +606,12 @@ class TitleState extends MusicBeatState
 						// credTextShit.text += '\nNight';
 						case 15:
 							addMoreText('Funkin'); // credTextShit.text += '\nFunkin';
-                        case 16:
+						case 16:
 							addMoreText('Is');
-							case 17:
-								addMoreText('The');
-								case 18:
-									
-										addMoreText('BEST!!!');
+						case 17:
+							addMoreText('The');
+						case 18:
+							addMoreText('BEST!!!');
 						case 20:
 							skipIntro();
 					}

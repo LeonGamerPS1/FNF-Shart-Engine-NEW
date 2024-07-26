@@ -888,7 +888,7 @@ class PlayState extends MusicBeatState
 		iconP2.cameras = [camHUD];
 		scoreTxt.cameras = [camHUD];
 		doof.cameras = [camHUD];
-
+	
 		// if (SONG.song == 'South')
 		// FlxG.camera.alpha = 0.7;
 		// UI_camera.zoom = 1;
@@ -961,6 +961,7 @@ class PlayState extends MusicBeatState
 		}
 
 		super.create();
+	
 	}
 
 	function ughIntro()
@@ -1508,7 +1509,7 @@ class PlayState extends MusicBeatState
 		if (executeModchart)
 		{
 			luaModchart = LuaUtil.createModchartState();
-			luaModchart.executeState('start', [PlayState.SONG.song]);
+			// luaModchart.executeState('start', [PlayState.SONG.song]);
 		}
 		#end
 		var swagCounter:Int = 0;
@@ -1937,10 +1938,12 @@ class PlayState extends MusicBeatState
 		#if !debug
 		perfectMode = false;
 		#end
+		#if windows
 		if (executeModchart)
-			{
-				luaModchart.executeState('onUpdate', [PlayState.SONG.song]);
-			}
+		{
+			luaModchart.executeState('onUpdate', [PlayState.SONG.song]);
+		}
+		#end
 		// do this BEFORE super.update() so songPosition is accurate
 		if (startingSong)
 		{
@@ -1997,7 +2000,7 @@ class PlayState extends MusicBeatState
 		super.update(elapsed);
 
 		scoreTxt.text = "Score:" + songScore;
-	
+
 		if (controls.PAUSE && startedCountdown && canPause)
 		{
 			persistentUpdate = false;
@@ -2023,7 +2026,7 @@ class PlayState extends MusicBeatState
 			DiscordClient.changePresence(detailsPausedText, SONG.song + " (" + storyDifficultyText + ")", iconRPC);
 			#end
 		}
-		
+
 		if (FlxG.keys.justPressed.SEVEN)
 		{
 			FlxG.switchState(new ChartingState());
@@ -2039,16 +2042,19 @@ class PlayState extends MusicBeatState
 		// FlxG.watch.addQuick('VOL', vocals.amplitudeLeft);
 		// FlxG.watch.addQuick('VOLRight', vocals.amplitudeRight);
 
-		iconP1.setGraphicSize(Std.int(FlxMath.lerp(150, iconP1.width, 0.85)));
-		iconP2.setGraphicSize(Std.int(FlxMath.lerp(150, iconP2.width, 0.85)));
 
+		var mult:Float = FlxMath.lerp(1, iconP1.scale.x, CoolUtil.boundTo(1 - (elapsed * 9), 0, 1));
+		iconP1.scale.set(mult, mult);
 		iconP1.updateHitbox();
+
+		var mult:Float = FlxMath.lerp(1, iconP2.scale.x, CoolUtil.boundTo(1 - (elapsed * 9), 0, 1));
+		iconP2.scale.set(mult, mult);
 		iconP2.updateHitbox();
 
 		var iconOffset:Int = 26;
 
-		iconP1.x = healthBar.x + (healthBar.width * (FlxMath.remapToRange(healthBar.percent, 0, 100, 100, 0) * 0.01) - iconOffset);
-		iconP2.x = healthBar.x + (healthBar.width * (FlxMath.remapToRange(healthBar.percent, 0, 100, 100, 0) * 0.01)) - (iconP2.width - iconOffset);
+		iconP1.x = healthBar.x + (healthBar.width * (FlxMath.remapToRange(healthBar.percent, 0, 100, 100, 0) * 0.01)) + (150 * iconP1.scale.x - 150) / 2 - iconOffset;
+		iconP2.x = healthBar.x + (healthBar.width * (FlxMath.remapToRange(healthBar.percent, 0, 100, 100, 0) * 0.01)) - (150 * iconP2.scale.x) / 2 - iconOffset * 2;
 
 		if (health > 2)
 			health = 2;
@@ -2331,11 +2337,12 @@ class PlayState extends MusicBeatState
 
 		if (!inCutscene)
 			keyShit();
-
+		#if windows
 		if (executeModchart)
-			{
-				luaModchart.executeState('onUpdatePost', [PlayState.SONG.song]);
-			}
+		{
+			luaModchart.executeState('onUpdatePost', [PlayState.SONG.song]);
+		}
+		#end
 	}
 
 	function killCombo():Void
@@ -3101,9 +3108,14 @@ class PlayState extends MusicBeatState
 				camHUD.zoom += 0.03;
 			}
 		}
-
-		iconP1.setGraphicSize(Std.int(iconP1.width + 30));
-		iconP2.setGraphicSize(Std.int(iconP2.width + 30));
+		#if windows
+		if (executeModchart)
+		{
+			luaModchart.executeState('onBeatHit', [curBeat]);
+		}
+		#end
+		iconP1.setGraphicSize(Std.int(iconP1.width + 60));
+		iconP2.setGraphicSize(Std.int(iconP2.width + 60));
 
 		iconP1.updateHitbox();
 		iconP2.updateHitbox();
@@ -3194,4 +3206,14 @@ class PlayState extends MusicBeatState
 	}
 
 	var curLight:Int = 0;
+
+	public function setOnLuas(variable:String, arg:Dynamic, exclusions:Array<String> = null)
+	{
+		#if LUA_ALLOWED
+		if (exclusions == null)
+			exclusions = [];
+
+		luaModchart.set(variable, arg);
+		#end
+	}
 }
