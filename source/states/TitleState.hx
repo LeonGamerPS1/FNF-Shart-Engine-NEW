@@ -51,7 +51,7 @@ class TitleState extends MusicBeatState
 	public static var initialized:Bool = false;
 	
 	public static var updateVersion:String = '';
-	public static var psycheEngineVersion:String = '0.0.2h';
+	public static var psycheEngineVersion:String = 'v0.1-LuaModSupport';
 	var startedIntro:Bool;
 
 	var mustUpdate:Bool = false;
@@ -423,7 +423,7 @@ class TitleState extends MusicBeatState
 			if (!OutdatedSubState.leftState)
 			{
 				trace('checking for update');
-			var http = new haxe.Http("https://raw.githubusercontent.com/LeonGamerPS1/FNF-Shart-Engine/main/version.txt");
+			    var http = new haxe.Http("https://raw.githubusercontent.com/LeonGamerPS1/FNF-Shart-Engine/main/version.txt");
 
 			http.onData = function (data:String)
 			{
